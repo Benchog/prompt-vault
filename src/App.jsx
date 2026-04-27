@@ -30,7 +30,7 @@ import {
   X,
 } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
-import { BrowserRouter, Link, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Link, Route, Routes, useNavigate } from 'react-router-dom'
 import PaystackPop from '@paystack/inline-js'
 import promptLibrary from './data/prompt-library.json'
 
@@ -144,15 +144,18 @@ function App() {
 }
 
 function StorePage() {
+  const navigate = useNavigate()
   const { packages, packs, testimonials } = useCatalog()
-  const [buyerEmail, setBuyerEmail] = useState('')
   const [status, setStatus] = useState('')
   const [openFaq, setOpenFaq] = useState(0)
   const [query, setQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState('ALL')
   const [selectedPack, setSelectedPack] = useState(null)
+  const [logoTapCount, setLogoTapCount] = useState(0)
+  const [tapResetTimer, setTapResetTimer] = useState(null)
   const [deliveryMethod, setDeliveryMethod] = useState('email')
   const [deliveryContact, setDeliveryContact] = useState('')
+  const [modalEmail, setModalEmail] = useState('')
 
   const totalPrompts = packs.reduce((sum, pack) => sum + pack.prompts.length, 0)
   const categories = packs.map((pack) => ({
@@ -171,6 +174,15 @@ function StorePage() {
       return categoryOk && [item.title, item.summary, item.category, item.prompt].join(' ').toLowerCase().includes(t)
     })
   }, [activeCategory, packs, query])
+
+  const displayedPrompts = useMemo(() => {
+    if (activeCategory === 'ALL') {
+      return packs
+        .map((pack) => pack.prompts[0] ? { ...pack.prompts[0], category: pack.name } : null)
+        .filter(Boolean)
+    }
+    return filteredPrompts
+  }, [activeCategory, filteredPrompts, packs])
 
   useEffect(() => {
     const reveals = document.querySelectorAll('.reveal')
@@ -203,7 +215,7 @@ function StorePage() {
     }
   }
 
-  const handleCheckout = (pack) => {
+  const handleCheckout = (pack, buyerEmail) => {
     if (!buyerEmail) return setStatus('Please enter your email before checkout.')
 
     if (paystackPublicKey) {
@@ -237,10 +249,24 @@ function StorePage() {
     }
   }
 
+  const handleLogoTap = (event) => {
+    event.preventDefault()
+    const next = logoTapCount + 1
+    setLogoTapCount(next)
+    if (tapResetTimer) clearTimeout(tapResetTimer)
+    const timer = setTimeout(() => setLogoTapCount(0), 1800)
+    setTapResetTimer(timer)
+    if (next >= 5) {
+      setLogoTapCount(0)
+      if (timer) clearTimeout(timer)
+      navigate('/admin')
+    }
+  }
+
   return (
     <div className="store">
       <nav className="nav">
-        <a href="#" className="logo"><img src="/logo.svg" alt="PromptVault logo" />Prompt<span>Vault</span></a>
+        <a href="/" className="logo" onClick={handleLogoTap}><img src="/logo.svg" alt="PromptVault logo" />Prompt<span>Vault</span></a>
         <ul>
           <li><a href="#categories">Categories</a></li>
           <li><a href="#packs">Packs</a></li>
@@ -251,7 +277,18 @@ function StorePage() {
       </nav>
 
       <section className="hero">
-        <div className="hero-bg" />
+        <div className="hero-bg">
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            poster="https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=1800&q=80"
+          >
+            <source src="https://cdn.coverr.co/videos/coverr-futuristic-robot-in-front-of-monitors-1578903644974?download=1080p" type="video/mp4" />
+          </video>
+        </div>
         <div className="hero-eyebrow">The AI Prompt Store</div>
         <h1>Stop Wasting Time. <em>Start Getting Results.</em></h1>
         <p className="hero-sub">
@@ -302,10 +339,6 @@ function StorePage() {
         <div className="section-tag">Featured Packs</div>
         <h2 className="section-title">Pick Your Pack</h2>
         <p className="section-sub">Every pack is downloadable after payment. Copy, paste, and use immediately in ChatGPT, Claude, or Gemini.</p>
-        <label className="email-label">
-          Customer Email
-          <input className="email-input" value={buyerEmail} onChange={(e) => setBuyerEmail(e.target.value)} placeholder="customer@email.com" />
-        </label>
         <div className="packs-grid reveal">
           {categories.map((pack, idx) => {
             const Icon = iconByCategory[pack.name] || Command
@@ -386,7 +419,9 @@ function StorePage() {
       <section id="library">
         <div className="section-tag">Prompt Explorer</div>
         <h2 className="section-title">Prompt Library</h2>
-        <p className="section-sub">Search and inspect the loaded prompt catalog quickly.</p>
+        <p className="section-sub">
+          Default view shows one locked preview per category. Select a category to see the full locked list.
+        </p>
         <div className="library-controls">
           <label className="search-wrap"><Search size={16} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search prompts..." /></label>
           <select value={activeCategory} onChange={(e) => setActiveCategory(e.target.value)}>
@@ -395,7 +430,7 @@ function StorePage() {
           </select>
         </div>
         <div className="library-list reveal">
-          {filteredPrompts.slice(0, 36).map((item) => (
+          {displayedPrompts.slice(0, activeCategory === 'ALL' ? 6 : 200).map((item) => (
             <details key={`${item.category}-${item.number}`} className="library-item">
               <summary>{item.title} <small>{item.category}</small> <ChevronDown size={14} /></summary>
               <p>{item.summary}</p>
@@ -468,6 +503,14 @@ function StorePage() {
             </ul>
             <div className="modal-form">
               <label>
+                Buyer Email
+                <input
+                  value={modalEmail}
+                  onChange={(e) => setModalEmail(e.target.value)}
+                  placeholder="you@example.com"
+                />
+              </label>
+              <label>
                 Delivery Preference
                 <select value={deliveryMethod} onChange={(e) => setDeliveryMethod(e.target.value)}>
                   <option value="email">Email</option>
@@ -490,7 +533,7 @@ function StorePage() {
                 className="btn-primary"
                 type="button"
                 onClick={() => {
-                  handleCheckout(selectedPack)
+                  handleCheckout(selectedPack, modalEmail)
                   setSelectedPack(null)
                 }}
               >
