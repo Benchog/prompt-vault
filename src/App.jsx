@@ -34,7 +34,15 @@ import { BrowserRouter, Link, Route, Routes, useNavigate } from 'react-router-do
 import PaystackPop from '@paystack/inline-js'
 import promptLibrary from './data/prompt-library.json'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const normalizeSupabaseUrl = (rawUrl) => {
+  if (!rawUrl) return rawUrl
+  return rawUrl
+    .replace(/\/rest\/v1\/?$/i, '')
+    .replace(/\/auth\/v1\/?$/i, '')
+    .replace(/\/+$/g, '')
+}
+
+const supabaseUrl = normalizeSupabaseUrl(import.meta.env.VITE_SUPABASE_URL)
 const supabaseAnon = import.meta.env.VITE_SUPABASE_ANON_KEY
 const paystackPublicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY
 const ownerEmail = import.meta.env.VITE_OWNER_EMAIL
@@ -287,8 +295,7 @@ function StorePage() {
             preload="auto"
             onError={() => setVideoFailed(true)}
           >
-            <source src="https://cdn.coverr.co/videos/coverr-robot-working-at-a-computer-8050/1080p.mp4" type="video/mp4" />
-            <source src="https://cdn.pixabay.com/video/2023/03/08/153880-806907910_large.mp4" type="video/mp4" />
+            <source src="/hero-robot.mp4" type="video/mp4" />
           </video>
         </div>
         <div className="hero-eyebrow">The AI Prompt Store</div>
