@@ -1,13 +1,21 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
+  BookOpen,
+  CircleCheckBig,
+  CircleHelp,
+  ClipboardList,
+  Coins,
+  Download,
+  GraduationCap,
+  Handshake,
+  Lightbulb,
+  Rocket,
+  ShoppingCart,
   ArrowUpRight,
-  BadgeCheck,
-  Banknote,
   BriefcaseBusiness,
   ChevronDown,
   Command,
   Gem,
-  GraduationCap,
   HandCoins,
   LogIn,
   LogOut,
@@ -39,7 +47,7 @@ const iconByCategory = {
   BUSINESS: BriefcaseBusiness,
   STUDENTS: GraduationCap,
   'CAREER & CV': HandCoins,
-  'SIDE HUSTLE': Banknote,
+  'SIDE HUSTLE': Rocket,
   'PERSONAL GROWTH': Sparkles,
 }
 
@@ -157,6 +165,23 @@ function StorePage() {
     })
   }, [activeCategory, packs, query])
 
+  useEffect(() => {
+    const reveals = document.querySelectorAll('.reveal')
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible')
+            observer.unobserve(entry.target)
+          }
+        })
+      },
+      { threshold: 0.08 },
+    )
+    reveals.forEach((node) => observer.observe(node))
+    return () => observer.disconnect()
+  }, [])
+
   const verifyPaymentReference = async ({ reference, email, packageName, amount }) => {
     try {
       const response = await fetch('/api/paystack-verify', {
@@ -219,12 +244,11 @@ function StorePage() {
         <div className="hero-eyebrow">The AI Prompt Store</div>
         <h1>Stop Wasting Time. <em>Start Getting Results.</em></h1>
         <p className="hero-sub">
-          Premium, tested prompts that transform AI into a real productivity engine for business,
-          creators, students, and ambitious professionals.
+          Most people use AI like a broken calculator. Our prompt packs turn AI into your most productive employee instantly.
         </p>
         <div className="hero-actions">
           <a href="#packs" className="btn-primary">Browse Prompt Packs</a>
-          <a href="#library" className="btn-ghost">Explore Library</a>
+          <a href="#how" className="btn-ghost">See how it works</a>
         </div>
         <div className="hero-stats">
           <div><div className="stat-num">{totalPrompts}+</div><div className="stat-label">Prompts Available</div></div>
@@ -245,7 +269,7 @@ function StorePage() {
         <div className="section-tag">What We Cover</div>
         <h2 className="section-title">Every Category You Need</h2>
         <p className="section-sub">Choose a category and get battle-tested prompts ready for immediate use.</p>
-        <div className="categories-grid">
+        <div className="categories-grid reveal">
           {categories.map((cat) => {
             const Icon = iconByCategory[cat.name] || Command
             return (
@@ -266,12 +290,12 @@ function StorePage() {
       <section id="packs">
         <div className="section-tag">Featured Packs</div>
         <h2 className="section-title">Pick Your Pack</h2>
-        <p className="section-sub">Secure payment with Paystack. Enter buyer email once and checkout quickly.</p>
+        <p className="section-sub">Every pack is downloadable after payment. Copy, paste, and use immediately in ChatGPT, Claude, or Gemini.</p>
         <label className="email-label">
           Customer Email
           <input className="email-input" value={buyerEmail} onChange={(e) => setBuyerEmail(e.target.value)} placeholder="customer@email.com" />
         </label>
-        <div className="packs-grid">
+        <div className="packs-grid reveal">
           {categories.map((pack, idx) => {
             const Icon = iconByCategory[pack.name] || Command
             return (
@@ -280,7 +304,9 @@ function StorePage() {
                 <div className="pack-header">
                   <span className="pack-icon"><Icon size={28} /></span>
                   <div className="pack-name">{pack.name}</div>
-                  <div className="pack-tagline">A premium set of prompts designed to save time and improve output quality.</div>
+                <div className="pack-tagline">
+                  A premium set of prompts designed to save time and improve output quality across real work and business goals.
+                </div>
                 </div>
                 <div className="pack-body">
                   <ul className="pack-includes">
@@ -300,6 +326,52 @@ function StorePage() {
         {status ? <p className="status-line">{status}</p> : null}
       </section>
 
+      <div className="bundle-banner reveal">
+        <div className="bundle-text">
+          <div className="bundle-kicker">Best Value</div>
+          <div className="bundle-title">Get All Packs.<br />Pay Less.</div>
+          <div className="bundle-sub">One payment gives broad coverage across your highest value prompt categories.</div>
+          <a href="#packs" className="btn-bundle">Get the Full Library</a>
+        </div>
+        <div className="bundle-price-block">
+          <div className="bundle-was">Total individual value: High</div>
+          <div className="bundle-price">Bundle Deal</div>
+          <div className="bundle-sub">Instant access · Continuous value</div>
+        </div>
+      </div>
+
+      <section id="how">
+        <div className="section-tag">The Process</div>
+        <h2 className="section-title">How It Works</h2>
+        <p className="section-sub">Simple, direct, and fast from purchase to execution.</p>
+        <div className="steps reveal">
+          <div className="step">
+            <div className="step-num">01</div>
+            <div className="step-icon"><ShoppingCart size={24} /></div>
+            <div className="step-title">Pick Your Pack</div>
+            <div className="step-desc">Select the pack aligned to your goal and checkout securely.</div>
+          </div>
+          <div className="step">
+            <div className="step-num">02</div>
+            <div className="step-icon"><Download size={24} /></div>
+            <div className="step-title">Instant Access</div>
+            <div className="step-desc">Receive your content immediately after successful payment.</div>
+          </div>
+          <div className="step">
+            <div className="step-num">03</div>
+            <div className="step-icon"><ClipboardList size={24} /></div>
+            <div className="step-title">Copy, Paste, Execute</div>
+            <div className="step-desc">Plug prompts into your AI tool and generate higher quality outcomes.</div>
+          </div>
+          <div className="step">
+            <div className="step-num">04</div>
+            <div className="step-icon"><CircleCheckBig size={24} /></div>
+            <div className="step-title">Scale Your Output</div>
+            <div className="step-desc">Repeat daily to save time, improve quality, and stay consistent.</div>
+          </div>
+        </div>
+      </section>
+
       <section id="library">
         <div className="section-tag">Prompt Explorer</div>
         <h2 className="section-title">Prompt Library</h2>
@@ -311,7 +383,7 @@ function StorePage() {
             {packs.map((pack) => <option key={pack.name} value={pack.name}>{pack.name}</option>)}
           </select>
         </div>
-        <div className="library-list">
+        <div className="library-list reveal">
           {filteredPrompts.slice(0, 36).map((item) => (
             <details key={`${item.category}-${item.number}`} className="library-item">
               <summary>{item.title} <small>{item.category}</small> <ChevronDown size={14} /></summary>
@@ -325,7 +397,8 @@ function StorePage() {
       <section id="reviews">
         <div className="section-tag">Social Proof</div>
         <h2 className="section-title">What People Are Saying</h2>
-        <div className="reviews-grid">
+        <p className="section-sub">Real outcomes from buyers who stopped using weak prompts.</p>
+        <div className="reviews-grid reveal">
           {testimonials.map((t) => (
             <div className="review-card" key={`${t.person}-${t.role}`}>
               <div className="review-stars"><Gem size={14} /> Trusted Result</div>
@@ -340,7 +413,7 @@ function StorePage() {
       <section id="faq">
         <div className="section-tag">Questions</div>
         <h2 className="section-title">FAQ</h2>
-        <div className="faq-list">
+        <div className="faq-list reveal">
           {faqItems.map((item, idx) => (
             <button key={item.q} className="faq-item" type="button" onClick={() => setOpenFaq(openFaq === idx ? -1 : idx)}>
               <span>{item.q}</span>
@@ -355,6 +428,16 @@ function StorePage() {
         <p>Pick your pack, pay securely, and start producing premium outputs today.</p>
         <a href="#packs" className="btn-primary">Browse All Packs</a>
       </div>
+
+      <footer className="footer">
+        <a href="#" className="logo">Prompt<span>Vault</span></a>
+        <ul className="footer-links">
+          <li><a href="/terms">Terms</a></li>
+          <li><a href="/privacy">Privacy</a></li>
+          <li><a href="/refund">Refund</a></li>
+        </ul>
+        <div className="footer-copy">© 2026 PromptVault · All rights reserved</div>
+      </footer>
     </div>
   )
 }
