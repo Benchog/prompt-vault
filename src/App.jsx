@@ -156,6 +156,7 @@ function StorePage() {
   const [deliveryMethod, setDeliveryMethod] = useState('email')
   const [deliveryContact, setDeliveryContact] = useState('')
   const [modalEmail, setModalEmail] = useState('')
+  const [videoFailed, setVideoFailed] = useState(false)
 
   const totalPrompts = packs.reduce((sum, pack) => sum + pack.prompts.length, 0)
   const categories = packs.map((pack) => ({
@@ -277,16 +278,17 @@ function StorePage() {
       </nav>
 
       <section className="hero">
-        <div className="hero-bg">
+        <div className={`hero-bg ${videoFailed ? 'video-failed' : ''}`}>
           <video
             autoPlay
             muted
             loop
             playsInline
             preload="auto"
-            poster="https://images.unsplash.com/photo-1515879218367-8466d910aaa4?auto=format&fit=crop&w=1800&q=80"
+            onError={() => setVideoFailed(true)}
           >
-            <source src="https://cdn.coverr.co/videos/coverr-futuristic-robot-in-front-of-monitors-1578903644974?download=1080p" type="video/mp4" />
+            <source src="https://cdn.coverr.co/videos/coverr-robot-working-at-a-computer-8050/1080p.mp4" type="video/mp4" />
+            <source src="https://cdn.pixabay.com/video/2023/03/08/153880-806907910_large.mp4" type="video/mp4" />
           </video>
         </div>
         <div className="hero-eyebrow">The AI Prompt Store</div>
@@ -528,7 +530,7 @@ function StorePage() {
               </label>
             </div>
             <div className="modal-actions">
-              <button className="btn-ghost" type="button" onClick={() => setSelectedPack(null)}>Close</button>
+              <button className="btn-modal-secondary" type="button" onClick={() => setSelectedPack(null)}>Close</button>
               <button
                 className="btn-primary"
                 type="button"
