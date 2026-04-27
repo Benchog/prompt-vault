@@ -27,6 +27,7 @@ import {
   Store,
   Upload,
   Video,
+  X,
 } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
 import { BrowserRouter, Link, Route, Routes } from 'react-router-dom'
@@ -134,6 +135,9 @@ function App() {
       <Routes>
         <Route path="/" element={<StorePage />} />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/terms" element={<LegalPage title="Terms of Service" sections={termsSections} />} />
+        <Route path="/privacy" element={<LegalPage title="Privacy Policy" sections={privacySections} />} />
+        <Route path="/refund" element={<LegalPage title="Refund Policy" sections={refundSections} />} />
       </Routes>
     </BrowserRouter>
   )
@@ -146,6 +150,9 @@ function StorePage() {
   const [openFaq, setOpenFaq] = useState(0)
   const [query, setQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState('ALL')
+  const [selectedPack, setSelectedPack] = useState(null)
+  const [deliveryMethod, setDeliveryMethod] = useState('email')
+  const [deliveryContact, setDeliveryContact] = useState('')
 
   const totalPrompts = packs.reduce((sum, pack) => sum + pack.prompts.length, 0)
   const categories = packs.map((pack) => ({
@@ -208,7 +215,11 @@ function StorePage() {
         currency: 'GHS',
         ref: `promptvault_${pack.id || 'pack'}_${Date.now()}`,
         metadata: {
-          custom_fields: [{ display_name: 'Package', variable_name: 'package_name', value: pack.name }],
+          custom_fields: [
+            { display_name: 'Package', variable_name: 'package_name', value: pack.name },
+            { display_name: 'Delivery Method', variable_name: 'delivery_method', value: deliveryMethod },
+            { display_name: 'Delivery Contact', variable_name: 'delivery_contact', value: deliveryContact || buyerEmail },
+          ],
         },
         onSuccess: (transaction) =>
           verifyPaymentReference({
@@ -229,7 +240,7 @@ function StorePage() {
   return (
     <div className="store">
       <nav className="nav">
-        <a href="#" className="logo">Prompt<span>Vault</span></a>
+        <a href="#" className="logo"><img src="/logo.svg" alt="PromptVault logo" />Prompt<span>Vault</span></a>
         <ul>
           <li><a href="#categories">Categories</a></li>
           <li><a href="#packs">Packs</a></li>
@@ -317,7 +328,7 @@ function StorePage() {
                 </div>
                 <div className="pack-footer">
                   <div className="pack-price">GHS {pack.price} <span>/ pack</span></div>
-                  <button className="btn-buy" type="button" onClick={() => handleCheckout(pack)}>Get Pack</button>
+                  <button className="btn-buy" type="button" onClick={() => setSelectedPack(pack)}>Get Pack</button>
                 </div>
               </div>
             )
@@ -388,7 +399,10 @@ function StorePage() {
             <details key={`${item.category}-${item.number}`} className="library-item">
               <summary>{item.title} <small>{item.category}</small> <ChevronDown size={14} /></summary>
               <p>{item.summary}</p>
-              <pre>{item.prompt}</pre>
+              <div className="locked-prompt">
+                <ShieldCheck size={14} />
+                Full prompt is included in the paid pack. Preview unlocked after purchase.
+              </div>
             </details>
           ))}
         </div>
@@ -430,14 +444,62 @@ function StorePage() {
       </div>
 
       <footer className="footer">
-        <a href="#" className="logo">Prompt<span>Vault</span></a>
+        <a href="#" className="logo"><img src="/logo.svg" alt="PromptVault logo" />Prompt<span>Vault</span></a>
         <ul className="footer-links">
-          <li><a href="/terms">Terms</a></li>
-          <li><a href="/privacy">Privacy</a></li>
-          <li><a href="/refund">Refund</a></li>
+          <li><Link to="/terms">Terms</Link></li>
+          <li><Link to="/privacy">Policy</Link></li>
+          <li><Link to="/refund">Refund</Link></li>
         </ul>
         <div className="footer-copy">© 2026 PromptVault · All rights reserved</div>
       </footer>
+
+      {selectedPack ? (
+        <div className="preview-modal-backdrop" role="dialog" aria-modal="true">
+          <div className="preview-modal">
+            <button className="modal-close" type="button" onClick={() => setSelectedPack(null)}><X size={16} /></button>
+            <h3>{selectedPack.name} Preview</h3>
+            <p className="modal-sub">
+              You are about to purchase this pack. Review what is inside, choose delivery preference, then continue to Paystack.
+            </p>
+            <ul className="modal-includes">
+              {(selectedPack.prompts || []).slice(0, 6).map((prompt) => (
+                <li key={`${selectedPack.name}-${prompt.number}`}>{prompt.title}</li>
+              ))}
+            </ul>
+            <div className="modal-form">
+              <label>
+                Delivery Preference
+                <select value={deliveryMethod} onChange={(e) => setDeliveryMethod(e.target.value)}>
+                  <option value="email">Email</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="other">Other (preferred channel)</option>
+                </select>
+              </label>
+              <label>
+                Delivery Contact
+                <input
+                  value={deliveryContact}
+                  onChange={(e) => setDeliveryContact(e.target.value)}
+                  placeholder={deliveryMethod === 'whatsapp' ? 'WhatsApp number' : 'Email or preferred contact'}
+                />
+              </label>
+            </div>
+            <div className="modal-actions">
+              <button className="btn-ghost" type="button" onClick={() => setSelectedPack(null)}>Close</button>
+              <button
+                className="btn-primary"
+                type="button"
+                onClick={() => {
+                  handleCheckout(selectedPack)
+                  setSelectedPack(null)
+                }}
+              >
+                Continue to Paystack
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -551,5 +613,80 @@ function AdminPage() {
     </div>
   )
 }
+
+function LegalPage({ title, sections }) {
+  return (
+    <div className="admin legal-page">
+      <main className="admin-wrap">
+        <div className="admin-top">
+          <h1>{title}</h1>
+          <Link to="/">Back to Store</Link>
+        </div>
+        <div className="admin-grid legal-grid">
+          {sections.map((section) => (
+            <article className="admin-card" key={section.heading}>
+              <h3>{section.heading}</h3>
+              <p>{section.content}</p>
+            </article>
+          ))}
+        </div>
+      </main>
+    </div>
+  )
+}
+
+const termsSections = [
+  {
+    heading: 'Digital Product License',
+    content:
+      'By purchasing from PromptVault, you receive a non-transferable license to use prompts for personal and commercial output generation. Resale, redistribution, or repackaging of the raw prompt files is prohibited.',
+  },
+  {
+    heading: 'Payments and Access',
+    content:
+      'Payments are processed through Paystack. Once payment is confirmed, PromptVault initiates delivery based on your selected method (email, WhatsApp, or approved channel).',
+  },
+  {
+    heading: 'Acceptable Use',
+    content:
+      'You agree not to use PromptVault content for unlawful activity, fraud, harassment, or any behavior violating applicable laws or platform terms.',
+  },
+]
+
+const privacySections = [
+  {
+    heading: 'Information We Collect',
+    content:
+      'We collect customer details required for payment confirmation and digital delivery, including email, selected delivery preference, and transaction metadata.',
+  },
+  {
+    heading: 'How We Use Data',
+    content:
+      'Your information is used to verify purchases, deliver products, support customers, and improve service quality. We do not sell personal data to third parties.',
+  },
+  {
+    heading: 'Security and Retention',
+    content:
+      'PromptVault uses trusted infrastructure and restricted access controls. Data is retained only as long as needed for delivery, accounting, and customer support obligations.',
+  },
+]
+
+const refundSections = [
+  {
+    heading: 'Digital Goods Policy',
+    content:
+      'Because PromptVault products are digital and deliverable instantly, completed purchases are generally non-refundable.',
+  },
+  {
+    heading: 'Exceptions',
+    content:
+      'If you are billed multiple times, charged incorrectly, or fail to receive your package after successful payment, contact support for review and resolution.',
+  },
+  {
+    heading: 'Resolution Process',
+    content:
+      'Provide transaction reference, purchase date, and contact channel used. Valid claims are processed promptly, including re-delivery or corrective refund when justified.',
+  },
+]
 
 export default App
